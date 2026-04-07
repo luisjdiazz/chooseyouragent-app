@@ -15,20 +15,31 @@ const bodySchema = z.object({
 })
 
 export async function POST(req: Request) {
+  try {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new Response("Unauthorized", { status: 401 })
 
+  console.log("[chat] User authenticated:", user.id)
+
   const body = await req.json()
   const parsed = bodySchema.safeParse(body)
-  if (!parsed.success) return new Response("Bad Request", { status: 400 })
+  if (!parsed.success) {
+    console.log("[chat] Bad request:", parsed.error)
+    return new Response("Bad Request", { status: 400 })
+  }
   const { conversationId, content, imageUrls, model } = parsed.data
+  console.log("[chat] Request:", { conversationId, model, contentLength: content.length })
 
   const [conversation] = await db
     .select()
     .from(conversations)
     .where(and(eq(conversations.id, conversationId), eq(conversations.userId, user.id)))
-  if (!conversation) return new Response("Not Found", { status: 404 })
+  if (!conversation) {
+    console.log("[chat] Conversation not found")
+    return new Response("Not Found", { status: 404 })
+  }
+  console.log("[chat] Conversation found")
 
   const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.id, user.id))
   const modelMeta = getModelById(model)
@@ -101,6 +112,7 @@ export async function POST(req: Request) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
+        console.log("[chat] Calling KIE.AI with model:", model)
         const kieStream = await getKieClient().chat.completions.create({
           model,
           messages: apiMessages,
@@ -155,7 +167,8 @@ export async function POST(req: Request) {
 
         controller.enqueue(encoder.encode(`data: [DONE]\n\n`))
         controller.close()
-      } catch {
+      } catch (err) {
+        console.error("[chat] Stream error:", err)
         await db.delete(messages).where(eq(messages.id, assistantMessage.id))
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "stream_error" })}\n\n`))
         controller.close()
@@ -170,6 +183,10 @@ export async function POST(req: Request) {
       Connection: "keep-alive",
     },
   })
+  } catch (err) {
+    console.error("[chat] Unhandled error:", err)
+    return new Response(JSON.stringify({ error: String(err) }), { status: 500 })
+  }
 }
 
 async function generateConversationTitle(conversationId: string, firstMessage: string) {

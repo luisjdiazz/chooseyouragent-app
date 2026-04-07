@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -37,7 +38,7 @@ export function ModelPicker({ currentModel, onModelChange }: ModelPickerProps) {
         </p>
         <DropdownMenuSeparator className="bg-[#333]" />
         {Object.entries(grouped).map(([provider, models]) => (
-          <div key={provider}>
+          <DropdownMenuGroup key={provider}>
             <DropdownMenuLabel className="text-xs text-gray-500">{provider}</DropdownMenuLabel>
             {models.map((model) => (
               <DropdownMenuItem
@@ -60,7 +61,7 @@ export function ModelPicker({ currentModel, onModelChange }: ModelPickerProps) {
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator className="bg-[#333]" />
-          </div>
+          </DropdownMenuGroup>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>

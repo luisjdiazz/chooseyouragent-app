@@ -15,19 +15,16 @@ export function ChatLayout() {
   const handleConversationSelect = (id: string) => {
     setActiveConversationId(id)
     setSidebarOpen(false)
-    router.push(`/chat/${id}`)
   }
 
   const handleNewConversation = () => {
     setActiveConversationId(undefined)
     setModel(DEFAULT_MODEL)
     setSidebarOpen(false)
-    router.push("/chat")
   }
 
   const handleConversationCreated = (id: string) => {
     setActiveConversationId(id)
-    router.push(`/chat/${id}`)
   }
 
   return (
